@@ -8,8 +8,8 @@ pipeline {
             steps {
                 script {
                     echo 'Building the code...'
-                    // Tool: Maven 
-                    sh 'mvn clean package' 
+                    // Tool: Maven
+                    bat 'mvn clean package'  // Use bat for Windows
                 }
             }
         }
@@ -17,16 +17,16 @@ pipeline {
             steps {
                 script {
                     echo 'Running unit and integration tests...'
-                    sh 'mvn test' 
+                    bat 'mvn test'  // Use bat for Windows
                 }
             }
         }
         stage('Code Analysis') {
             steps {
                 script {
-                    echo 'Analyzing code...'
+                    echo 'Performing code analysis...'
                     // Tool: SonarQube
-                    sh 'sonar-scanner' 
+                    bat 'sonar-scanner'  // Use bat for Windows
                 }
             }
         }
@@ -34,17 +34,17 @@ pipeline {
             steps {
                 script {
                     echo 'Performing security scan...'
-                    // Tool: OWASP Dependency-Check 
-                    sh 'dependency-check.sh' 
+                    // Tool: OWASP Dependency-Check
+                    bat 'dependency-check --project MyProject --out dependency-check-report'  // Use bat for Windows
                 }
             }
         }
         stage('Deploy to Staging') {
             steps {
                 script {
-                    echo 'Deploying to staging server...'
-                    // Tool: AWS CLI 
-                    sh 'aws deploy --stage staging'
+                    echo 'Deploying to staging environment...'
+                    // Tool: AWS CLI or similar
+                    bat 'aws s3 cp target/myapp.jar s3://my-staging-bucket/'  // Use bat for Windows
                 }
             }
         }
@@ -52,36 +52,36 @@ pipeline {
             steps {
                 script {
                     echo 'Running integration tests on staging...'
-                    sh 'mvn verify' 
+                    // Tool: Maven or similar
+                    bat 'mvn verify'  // Use bat for Windows
                 }
             }
         }
         stage('Deploy to Production') {
             steps {
                 script {
-                    echo 'Deploying to production server...'
-                    sh 'aws deploy --stage production' 
+                    echo 'Deploying to production environment...'
+                    // Tool: AWS CLI or similar
+                    bat 'aws s3 cp target/myapp.jar s3://my-production-bucket/'  // Use bat for Windows
+                }
             }
         }
     }
     post {
-        success {
+        always {
             emailext(
                 to: "${EMAIL_RECIPIENT}",
-                subject: "Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Good news! Build ${env.JOB_NAME} #${env.BUILD_NUMBER} was successful. Check the logs for details.",
-                attachLog: true
-            )
-        }
-        failure {
-            emailext(
-                to: "${EMAIL_RECIPIENT}",
-                subject: "Build Failure: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Unfortunately, Build ${env.JOB_NAME} #${env.BUILD_NUMBER} failed. Please check the logs for details.",
-                attachLog: true
+                subject: "Build ${currentBuild.fullDisplayName} - ${currentBuild.currentResult}",
+                body: """
+                    Build Details:
+                    - Job: ${env.JOB_NAME}
+                    - Build Number: ${env.BUILD_NUMBER}
+                    - Status: ${currentBuild.currentResult}
+                    
+                    Please find the attached log.
+                """,
+                attachmentsPattern: '**/logs/*.log'
             )
         }
     }
 }
-
-
